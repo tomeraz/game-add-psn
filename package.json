@@ -4,5 +4,8 @@
   "description": "Add all available psn plus games to library",
   "repository": "https://github.com/tomeraz/game-add-psn",
   "author": "Tomer Raz <tomer.raz.jobs@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.31.1"
+  }
 }
