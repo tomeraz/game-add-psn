@@ -1,0 +1,8 @@
+{
+  "name": "game-add-psn",
+  "version": "0.0.1",
+  "description": "Add all available psn plus games to library",
+  "repository": "https://github.com/tomeraz/game-add-psn",
+  "author": "Tomer Raz <tomer.raz.jobs@gmail.com>",
+  "license": "MIT"
+}
