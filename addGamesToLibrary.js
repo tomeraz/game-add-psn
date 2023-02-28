@@ -14,7 +14,7 @@ const launchBrowser = async () => {
       // ignoreDefaultArgs: ["--no-first-run"],
       channel: "chrome",
       headless: false,
-      slowMo: 1000,
+      // slowMo: 1000,
       args: [
         "--disable-field-trial-config",
         "--disable-background-networking",
@@ -76,32 +76,56 @@ const getGames = async (browser) => {
 const addGames = async (browser, games) => {
   // for all games
   for (const game of games) {
-    // search game
-    const page = await browser.newPage();
-    const searchUrl = `https://store.playstation.com/en-us/search/${game}`;
-    await page.goto(searchUrl);
+    try {
+      // search game
+      const page = await browser.newPage();
+      const searchUrl = `https://store.playstation.com/en-us/search/${game}`;
+      await page.goto(searchUrl);
 
-    // if game is included in playstation plus subscription
-    const isIncluded = await page.$("text=included");
-    if (isIncluded) {
-      // enter game page
-      await page.getByText("included").first().click();
+      // if game is included in playstation plus subscription
+      const isIncluded = await page.$("text=included");
+      if (isIncluded) {
+        // enter game page
+        await page.getByText("included").first().click();
 
-      // add game to library
-      await page
-        .getByRole("button", { name: "Add to Library" })
-        .first()
-        .click();
+        // add game to library
+        const addToLibrary = await page.$("text=Add to Library");
+        if (addToLibrary) {
+          // only add to library the game next to included in plus subscription yellow text
+          await page.getByText("Add to Library").first().click();
+        }
+      }
+
+      // close page
+      await page.close();
+    } catch (error) {
+      console.error(`Error adding the game '${game}'`);
+      throw error;
     }
-
-    // close page
-    await page.close();
   }
+};
+
+const filterGames = (allGames) => {
+  const gameToContinueFrom = "Entwined™";
+  let games;
+  if (gameToContinueFrom) {
+    games = allGames.slice(
+      allGames.findIndex((game) => game == gameToContinueFrom),
+    );
+  } else {
+    // !gameToContinueFrom
+    games = allGames;
+  }
+
+  return games;
 };
 
 (async () => {
   const browser = await launchBrowser();
-  const games = await getGames(browser);
+  const allGames = await getGames(browser);
+  // const games = filterGames(allGames);
+  games = ["Outriders"];
+
   await addGames(browser, games);
 
   await new Promise((r) => setTimeout(r, 30000));
