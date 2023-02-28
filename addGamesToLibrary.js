@@ -1,6 +1,6 @@
 const playwright = require("playwright");
 
-(async () => {
+const launchBrowser = async () => {
   const launchOptions = {
     headless: false,
     channel: "chrome",
@@ -11,8 +11,10 @@ const playwright = require("playwright");
     userDataDir,
     {
       ignoreDefaultArgs: true,
+      // ignoreDefaultArgs: ["--no-first-run"],
       channel: "chrome",
       headless: false,
+      slowMo: 1000,
       args: [
         "--disable-field-trial-config",
         "--disable-background-networking",
@@ -53,6 +55,10 @@ const playwright = require("playwright");
     },
   );
 
+  return browser;
+};
+
+const getGames = async (browser) => {
   const page = await browser.newPage();
   await page.goto("https://www.playstation.com/en-us/ps-plus/games/");
   const gameCssSelector =
@@ -61,17 +67,42 @@ const playwright = require("playwright");
     return Array.from(gameNodes, (node) => node.innerText);
   });
 
+  // list games
+  games.forEach((game) => console.log(game));
+
+  return games;
+};
+
+const addGames = async (browser, games) => {
+  // for all games
   for (const game of games) {
-    const searchUrl = `https://www.playstation.com/en-us/search/?q=${game}&category=games`;
+    // search game
+    const page = await browser.newPage();
+    const searchUrl = `https://store.playstation.com/en-us/search/${game}`;
     await page.goto(searchUrl);
-    const isAddToLibrary = await page.isVisible("text='Add to Cart'");
-    if (isAddToLibrary) {
+
+    // if game is included in playstation plus subscription
+    const isIncluded = await page.$("text=included");
+    if (isIncluded) {
+      // enter game page
+      await page.getByText("included").first().click();
+
+      // add game to library
       await page
         .getByRole("button", { name: "Add to Library" })
         .first()
         .click();
     }
+
+    // close page
+    await page.close();
   }
+};
+
+(async () => {
+  const browser = await launchBrowser();
+  const games = await getGames(browser);
+  await addGames(browser, games);
 
   await new Promise((r) => setTimeout(r, 30000));
   await browser.close();
