@@ -83,17 +83,34 @@ const addGames = async (browser, games) => {
       await page.goto(searchUrl);
 
       // if game is included in playstation plus subscription
-      const isIncluded = await page.$("text=included");
-      if (isIncluded) {
+      const includedGames = await page.getByRole("listitem", { hasText: "Included"})
+        .filter({ has: page.locator("span.psw-icon--ps-plus") });
+      const includedGamesCount = await includedGames.count();
+
+      if (includedGamesCount > 0) {
         // enter game page
-        await page.getByText("included").first().click();
+        await includedGames.first().click();
+
+// =====
+// This causes some weird loop of scrolling without actually clicking the correct button.
+// =====
 
         // add game to library
-        const addToLibrary = await page.$("text=Add to Library");
-        if (addToLibrary) {
-          // only add to library the game next to included in plus subscription yellow text
-          await page.getByText("Add to Library").first().click();
-        }
+        // inspired by: https://stackoverflow.com/a/75548169
+        await page.getByRole("article")
+          .filter({ hasText: "Included with the Game Catalog in your PlayStation Plus subscription"})
+          .locator("button")
+          .filter({ hasText: "Add to Library"})
+          .first()
+          .click();
+     await new Promise((r) => setTimeout(r, 30000));
+
+        // const nisuy = await page.locator("text=Included with the Game Catalog in your PlayStation Plus subscription");
+        // const addToLibrary = await page.locator("text=Add to Library");
+        // if (addToLibrary) {
+        //   // only add to library the game next to included in plus subscription yellow text
+        //   await page.getByText("Add to Library").first().click();
+        // }
       }
 
       // close page
@@ -106,7 +123,7 @@ const addGames = async (browser, games) => {
 };
 
 const filterGames = (allGames) => {
-  const gameToContinueFrom = "Entwined™";
+  const gameToContinueFrom = "Outriders";
   let games;
   if (gameToContinueFrom) {
     games = allGames.slice(
