@@ -73,64 +73,64 @@ const getGames = async (browser) => {
   return games;
 };
 
+const waitForSignedIn = async (page) => {
+  const profileIcon = page.locator(".profile-icon");
+  await profileIcon.waitFor({ state: "visible" })
+}
+
+const addSingleGame = async (browser, game) => {
+  try {
+    // search game
+    const page = await browser.newPage();
+    const searchUrl = `https://store.playstation.com/en-us/search/${game}`;
+    await page.goto(searchUrl);
+
+    // if game is included in playstation plus subscription
+    const includedGames = await page.getByRole("listitem", { hasText: "Included", exact: true })
+      .filter({ hasText: game })
+      .filter({ has: page.locator("span.psw-icon--ps-plus") });
+    const includedGamesCount = await includedGames.count();
+
+    if (includedGamesCount > 0) {
+      // enter game page
+      await includedGames.first().click();
+
+      // wait to sign in
+      await waitForSignedIn(page);
+
+      // add game to library
+      // inspired by: https://stackoverflow.com/a/75548169
+      const x = await page.getByRole("article")
+        .filter({ hasText: "Included with the Game Catalog"})
+        .locator("button")
+        .filter({ hasText: "Add to Library"})
+        .first()
+        .click({ force: true })
+    }
+
+    // close page
+    await page.close();
+  } catch (error) {
+    console.error(`Error adding the game '${game}'`);
+    throw error;
+  }};
+
 const addGames = async (browser, games) => {
   // for all games
   for (const game of games) {
-    try {
-      // search game
-      const page = await browser.newPage();
-      const searchUrl = `https://store.playstation.com/en-us/search/${game}`;
-      await page.goto(searchUrl);
-
-      // if game is included in playstation plus subscription
-      const includedGames = await page.getByRole("listitem", { hasText: "Included"})
-        .filter({ has: page.locator("span.psw-icon--ps-plus") });
-      const includedGamesCount = await includedGames.count();
-
-      if (includedGamesCount > 0) {
-        // enter game page
-        await includedGames.first().click();
-
-// =====
-// This causes some weird loop of scrolling without actually clicking the correct button.
-// =====
-
-        // add game to library
-        // inspired by: https://stackoverflow.com/a/75548169
-        await page.getByRole("article")
-          .filter({ hasText: "Included with the Game Catalog in your PlayStation Plus subscription"})
-          .locator("button")
-          .filter({ hasText: "Add to Library"})
-          .first()
-          .click();
-     await new Promise((r) => setTimeout(r, 30000));
-
-        // const nisuy = await page.locator("text=Included with the Game Catalog in your PlayStation Plus subscription");
-        // const addToLibrary = await page.locator("text=Add to Library");
-        // if (addToLibrary) {
-        //   // only add to library the game next to included in plus subscription yellow text
-        //   await page.getByText("Add to Library").first().click();
-        // }
-      }
-
-      // close page
-      await page.close();
-    } catch (error) {
-      console.error(`Error adding the game '${game}'`);
-      throw error;
-    }
+    await addSingleGame(browser, game);
   }
 };
 
 const filterGames = (allGames) => {
-  const gameToContinueFrom = "Outriders";
+  // const gameToContinueFrom = "Outriders";
+  const gameToContinueFrom = "";
   let games;
   if (gameToContinueFrom) {
     games = allGames.slice(
       allGames.findIndex((game) => game == gameToContinueFrom),
     );
-  } else {
-    // !gameToContinueFrom
+  } else { // !gameToContinueFrom
     games = allGames;
   }
 
@@ -140,8 +140,8 @@ const filterGames = (allGames) => {
 (async () => {
   const browser = await launchBrowser();
   const allGames = await getGames(browser);
-  // const games = filterGames(allGames);
-  games = ["Outriders"];
+  const games = filterGames(allGames);
+  // games = ["Outriders"];
 
   await addGames(browser, games);
 
